@@ -80,9 +80,9 @@ export async function renderShareCard(
     const shown = sets.slice(0, maxRows);
     const rowsPerCol = Math.ceil(shown.length / cols);
     const rowH = 41;
-    const rowFont = '25px system-ui, -apple-system, sans-serif';
-    const colX = [60, 560];
-    const colW = 440;
+    const rowFont = '23px system-ui, -apple-system, sans-serif';
+    const colX = [40, 550];
+    const colW = 490;
     ctx.textAlign = 'left';
     shown.forEach((s, i) => {
       const col = Math.floor(i / rowsPerCol);
