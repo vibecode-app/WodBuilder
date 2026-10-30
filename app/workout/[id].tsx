@@ -16,6 +16,7 @@ import { getWorkout, getHistory, logSession, SessionLog, SetLog } from '../../sr
 import { parseWorkoutCSV, WorkoutDefinition } from '../../src/csv';
 import { buildPhases, formatClock, Phase } from '../../src/engine';
 import { playEndSound, playStartSound } from '../../src/audio';
+import { renderShareCard } from '../../src/shareCard';
 
 function formatWhen(ts: number): string {
   const d = new Date(ts);
@@ -292,6 +293,7 @@ export default function WorkoutPlayer() {
 
   const shareSummary = async () => {
     const stored = await getWorkout(id ?? '');
+    const wname = stored?.name ?? 'WOD';
     const detail = logsRef.current.map(
       (l) =>
         `R${l.round} · ${l.name}` +
@@ -299,10 +301,29 @@ export default function WorkoutPlayer() {
         (l.weightLb != null ? ` · ${l.weightLb} lb` : '')
     );
     const msg =
-      `🏋️ Workout complete — "${stored?.name ?? 'WOD'}" on WodBuilder\n` +
+      `🏋️ Workout complete — "${wname}" on WodBuilder\n` +
       `${logsRef.current.length} sets · ${formatClock(totalSec)}\n\n` +
       detail.join('\n') +
       `\n\nTry WodBuilder free: https://vibecode-app.github.io/WodBuilder/`;
+    // Share the result as an image card: Facebook turns text+link shares
+    // into bare link cards and drops the stats, so the numbers travel in
+    // the picture. Falls back to plain text on platforms without file share.
+    try {
+      const file = await renderShareCard(wname, logsRef.current, totalSec);
+      const nav: any = (globalThis as any).navigator;
+      const canFileShare =
+        file &&
+        nav &&
+        typeof nav.share === 'function' &&
+        (typeof nav.canShare !== 'function' || nav.canShare({ files: [file] }));
+      if (canFileShare) {
+        await nav.share({ files: [file], title: 'WodBuilder workout', text: msg });
+        return;
+      }
+    } catch (e: any) {
+      // User dismissing the sheet is not a failure — don't fall through.
+      if (e && (e.name === 'AbortError' || e.code === 20)) return;
+    }
     try {
       await Share.share({ message: msg });
     } catch {
