@@ -3,7 +3,7 @@ import { formatClock } from './engine';
 
 // Renders the workout result as a shareable image card (1080x1350 PNG).
 // Facebook turns text+link shares into bare link cards and drops the stats,
-// so the result travels as a picture with the numbers baked in.
+// so the numbers travel in the picture (the card itself carries the app link).
 export async function renderShareCard(
   workoutName: string,
   sets: SetLog[],
@@ -38,63 +38,69 @@ export async function renderShareCard(
     ctx.fillStyle = '#e10600';
     ctx.fillRect(0, 0, W, 16);
 
+    // Header.
     ctx.textAlign = 'center';
-    let y = 130;
-
+    let y = 104;
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 62px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 54px system-ui, -apple-system, sans-serif';
     ctx.fillText('🏋️ Workout complete', cx, y);
-    y += 78;
-
-    const nameFont = 'bold 46px system-ui, -apple-system, sans-serif';
-    ctx.font = nameFont;
+    y += 70;
+    const nameFont = 'bold 40px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#e10600';
     ctx.fillText(fit(`"${workoutName}"`, W - 120, nameFont), cx, y);
-    y += 66;
-
+    y += 58;
     ctx.fillStyle = '#999999';
-    ctx.font = '36px system-ui, -apple-system, sans-serif';
+    ctx.font = '32px system-ui, -apple-system, sans-serif';
     ctx.fillText(`${sets.length} sets · ${formatClock(totalSec)}`, cx, y);
-    y += 44;
-
-    // Divider.
+    y += 40;
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(80, y, W - 160, 2);
-    y += 58;
+    const rowsTop = y + 46;
 
-    // Per-set rows (cap so the card never overflows).
-    const MAX_ROWS = 16;
-    const rowFont = '30px system-ui, -apple-system, sans-serif';
-    const shown = sets.slice(0, MAX_ROWS);
+    // Footer (positioned from the bottom so rows can never overlap it).
+    const footerDivY = H - 200;
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(80, footerDivY, W - 160, 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Try WodBuilder free', cx, H - 136);
+    ctx.fillStyle = '#e10600';
+    ctx.font = '28px system-ui, -apple-system, sans-serif';
+    ctx.fillText('vibecode-app.github.io/WodBuilder', cx, H - 94);
+    ctx.fillStyle = '#666666';
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Built using Muse (muse.ai)', cx, H - 52);
+
+    // Per-set rows. Two columns when there are many sets so big workouts
+    // (up to 40 sets) show every set instead of hiding behind "+N more".
+    const twoCol = sets.length > 16;
+    const cols = twoCol ? 2 : 1;
+    const maxRows = twoCol ? 40 : 20;
+    const shown = sets.slice(0, maxRows);
+    const rowsPerCol = Math.ceil(shown.length / cols);
+    const rowH = 41;
+    const rowFont = '25px system-ui, -apple-system, sans-serif';
+    const colX = [60, 560];
+    const colW = 440;
     ctx.textAlign = 'left';
     shown.forEach((s, i) => {
+      const col = Math.floor(i / rowsPerCol);
+      const row = i % rowsPerCol;
       const line =
         `R${s.round} · ${s.name}` +
         (s.reps != null ? ` · ${s.reps} reps` : '') +
         (s.weightLb != null ? ` · ${s.weightLb} lb` : '');
       ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#c9c9c9';
-      ctx.fillText(fit(line, W - 160, rowFont), 80, y);
-      y += 46;
+      ctx.fillText(fit(line, colW, rowFont), colX[col], rowsTop + row * rowH);
     });
-    if (sets.length > MAX_ROWS) {
-      ctx.fillStyle = '#777777';
-      ctx.fillText(`+ ${sets.length - MAX_ROWS} more sets`, 80, y);
-      y += 46;
+    if (sets.length > shown.length) {
+      const moreY = rowsTop + rowsPerCol * rowH + 34;
+      if (moreY < footerDivY - 20) {
+        ctx.fillStyle = '#777777';
+        ctx.fillText(`+ ${sets.length - shown.length} more sets`, 80, moreY);
+      }
     }
-
-    // Footer: app link + credit.
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(80, H - 250, W - 160, 2);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 34px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Try WodBuilder free', cx, H - 176);
-    ctx.fillStyle = '#e10600';
-    ctx.font = '32px system-ui, -apple-system, sans-serif';
-    ctx.fillText('vibecode-app.github.io/WodBuilder', cx, H - 126);
-    ctx.fillStyle = '#666666';
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Built using Muse (muse.ai)', cx, H - 76);
 
     const blob: any = await new Promise((resolve) =>
       canvas.toBlob((b: any) => resolve(b), 'image/png')
