@@ -133,8 +133,25 @@ export default function WorkoutPlayer() {
           // End-of-exercise alarm (rest phases end silently here; the
           // next phase's start cue covers them).
           playEndSound();
-          setReps(p.targetReps != null ? String(p.targetReps) : '');
-          setWeight(p.targetWeightLb != null ? String(p.targetWeightLb) : '');
+          // Prefill from the earlier entry when re-doing an exercise,
+          // otherwise from the CSV targets.
+          const prev = logsRef.current.find(
+            (l) => l.name === p.name && l.round === p.round
+          );
+          setReps(
+            prev?.reps != null
+              ? String(prev.reps)
+              : p.targetReps != null
+                ? String(p.targetReps)
+                : ''
+          );
+          setWeight(
+            prev?.weightLb != null
+              ? String(prev.weightLb)
+              : p.targetWeightLb != null
+                ? String(p.targetWeightLb)
+                : ''
+          );
           setLogging(true);
         } else {
           advance();
@@ -183,6 +200,23 @@ export default function WorkoutPlayer() {
     });
   };
 
+  // Back up to the previous exercise (re-do it or fix its logged sets).
+  // Already-logged sets for other exercises are left untouched.
+  const goBack = () => {
+    if (!phases) return;
+    for (let i = phaseIdx - 1; i >= 0; i--) {
+      if (phases[i].kind === 'work') {
+        setLogging(false);
+        setPaused(false);
+        resumeLeftRef.current = null;
+        setPhaseIdx(i);
+        return;
+      }
+    }
+  };
+  const canGoBack =
+    !!phases && phases.slice(0, phaseIdx).some((p) => p.kind === 'work');
+
   const finishWorkout = async () => {
     const secs = Math.round(
       (Date.now() - startedAtRef.current - pausedTotalRef.current) / 1000
@@ -204,7 +238,18 @@ export default function WorkoutPlayer() {
       const w = parseFloat(weight.trim());
       if (Number.isFinite(r)) entry.reps = r;
       if (Number.isFinite(w)) entry.weightLb = w;
-      logsRef.current = [...logsRef.current, entry];
+      // Upsert: re-doing an exercise (via back navigation) replaces its
+      // earlier entry instead of duplicating it.
+      const idx = logsRef.current.findIndex(
+        (l) => l.name === p.name && l.round === p.round
+      );
+      if (idx >= 0) {
+        const next = [...logsRef.current];
+        next[idx] = entry;
+        logsRef.current = next;
+      } else {
+        logsRef.current = [...logsRef.current, entry];
+      }
       setLogs(logsRef.current);
     }
     advance();
@@ -256,7 +301,8 @@ export default function WorkoutPlayer() {
     const msg =
       `🏋️ Workout complete — "${stored?.name ?? 'WOD'}" on WodBuilder\n` +
       `${logsRef.current.length} sets · ${formatClock(totalSec)}\n\n` +
-      detail.join('\n');
+      detail.join('\n') +
+      `\n\nTry WodBuilder free: https://vibecode-app.github.io/WodBuilder/`;
     try {
       await Share.share({ message: msg });
     } catch {
@@ -455,6 +501,11 @@ export default function WorkoutPlayer() {
         <TouchableOpacity style={styles.ghostButton} onPress={advance}>
           <Text style={styles.ghostText}>Skip exercise</Text>
         </TouchableOpacity>
+        {canGoBack ? (
+          <TouchableOpacity style={styles.ghostButton} onPress={goBack}>
+            <Text style={styles.ghostText}>‹ Previous exercise</Text>
+          </TouchableOpacity>
+        ) : null}
         {stopButton}
       </View>
     );
@@ -474,6 +525,11 @@ export default function WorkoutPlayer() {
       <TouchableOpacity style={styles.primaryButton} onPress={advance}>
         <Text style={styles.primaryText}>Skip rest</Text>
       </TouchableOpacity>
+      {canGoBack ? (
+        <TouchableOpacity style={styles.ghostButton} onPress={goBack}>
+          <Text style={styles.ghostText}>‹ Previous exercise</Text>
+        </TouchableOpacity>
+      ) : null}
       {stopButton}
     </View>
   );

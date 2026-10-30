@@ -14,38 +14,12 @@ import { saveWorkout } from '../src/store';
 import { formatClock, estimateTotalSec } from '../src/engine';
 import { SAMPLES } from '../src/sample';
 
-const AI_PROMPT = `Write me a WodBuilder workout CSV with this exact format:
-
-# workout: <workout name>
-# rounds: <number>
-# rest_between_rounds_sec: <seconds>
-exercise,duration_sec,rest_sec,target_reps,target_weight_lb
-<one row per exercise, e.g. Kettlebell Goblet Squat,45,30,12,35>
-
-Rules:
-- Keep the # at the start of the first three lines, exactly as shown
-- Only use these exercise names: Bicep Curl, Bicycle Crunch, Burpees, Calf Raise, Chin-Up, Crunch, Decline Push-Up, Diamond Push-Up, Dumbbell Row, Jump Squat, Lunge, Military Push-Up, Mountain Climbers, Plank, Pull-Up, Reverse Grip Chin-Up, Shoulder Press, Side Plank, Squat, Standard Push-Up, Tricep Extension, Wide Grip Pull-Up, Wide Push-Up, Concept2 Row, Kettlebell Goblet Squat, Dumbbell Floor Press, Box Step-Up, Barbell Deadlift, Two-Hand Kettlebell Swing, Dumbbell Push Press, Farmer Carry, Plank Shoulder Taps, Single Unders, Double Unders, Box Jump, Broad Jump, Run, Handstand Push-Up, Handstand Box Push-Up, Barbell Bench Press
-- Make it a 30-minute full-body HIIT: 2 rounds, 45 seconds work / 30 seconds rest per exercise, 120 seconds rest between rounds
-- Include target reps and target weight in pounds where it makes sense
-- Reply with only the CSV, no explanations`;
-
 export default function NewWorkout() {
   const params = useLocalSearchParams<{ csv?: string }>();
   const [csv, setCsv] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<WorkoutDefinition | null>(null);
   const [unknown, setUnknown] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
-
-  const onCopyPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(AI_PROMPT);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard unavailable — user can still select the text manually
-    }
-  };
 
   // Accept a pre-built CSV (e.g. from the exercise picker).
   useEffect(() => {
@@ -149,17 +123,13 @@ export default function NewWorkout() {
         </View>
       ) : null}
 
-      <View style={styles.tipCard}>
-        <Text style={styles.tipTitle}>💡 Don't have a CSV? Ask Muse AI to write one.</Text>
-        <Text style={styles.tipBody}>
-          Paste the prompt below into Muse (muse.ai), copy the CSV it gives you, and paste it into the
-          box above. Edit the workout description to fit your own equipment and goals.
+      <TouchableOpacity style={styles.aiLinkCard} onPress={() => router.push('/ai')}>
+        <Text style={styles.aiLinkTitle}>🤖 Don't have a CSV? Build one with AI</Text>
+        <Text style={styles.aiLinkBody}>
+          Copy the example prompt, paste it into any AI you use, and paste the
+          workout CSV it gives you back.
         </Text>
-        <Text style={styles.promptBox}>{AI_PROMPT}</Text>
-        <TouchableOpacity style={styles.copyButton} onPress={onCopyPrompt}>
-          <Text style={styles.copyText}>{copied ? 'Copied ✓' : 'Copy prompt'}</Text>
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -202,18 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#4cd964', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 16,
   },
   saveText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
-  tipCard: {
-    backgroundColor: '#141414', borderWidth: 1, borderColor: '#333',
+  aiLinkCard: {
+    backgroundColor: '#141414', borderWidth: 1, borderColor: '#4cd964',
     borderRadius: 12, padding: 16, marginTop: 16,
   },
-  tipTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold', marginBottom: 8 },
-  tipBody: { color: '#ccc', fontSize: 14, lineHeight: 20, marginBottom: 12 },
-  promptBox: {
-    backgroundColor: '#0a0a0a', color: '#ddd', borderRadius: 8, padding: 12,
-    fontSize: 12, lineHeight: 18, fontFamily: 'monospace', marginBottom: 12,
-  },
-  copyButton: {
-    backgroundColor: '#333', borderRadius: 10, padding: 12, alignItems: 'center',
-  },
-  copyText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  aiLinkTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
+  aiLinkBody: { color: '#ccc', fontSize: 14, lineHeight: 20 },
 });

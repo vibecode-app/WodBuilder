@@ -26,6 +26,7 @@ export default function Layout() {
       >
         <Stack.Screen name="index" options={{ title: 'WodBuilder' }} />
         <Stack.Screen name="new" options={{ title: 'New WOD' }} />
+        <Stack.Screen name="ai" options={{ title: 'Build WOD with AI' }} />
         <Stack.Screen name="pick" options={{ title: 'Pick Exercises' }} />
         <Stack.Screen name="edit/[id]" options={{ title: 'Edit WOD' }} />
         <Stack.Screen name="history" options={{ title: 'History' }} />

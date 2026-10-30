@@ -55,6 +55,9 @@ export default function Library() {
       <TouchableOpacity style={styles.newButton} onPress={() => router.push('/new')}>
         <Text style={styles.newButtonText}>+ New WOD from CSV</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.aiButton} onPress={() => router.push('/ai')}>
+        <Text style={styles.aiButtonText}>🤖 Build WOD with AI</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.pickButton} onPress={() => router.push('/pick')}>
         <Text style={styles.pickButtonText}>Build from exercise list</Text>
       </TouchableOpacity>
@@ -66,7 +69,7 @@ export default function Library() {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No workouts yet</Text>
           <Text style={styles.emptyBody}>
-            Ask Muse for a workout CSV built around your equipment, paste it in, and it lands here with demo videos.
+            Ask any AI for a workout CSV built around your equipment, paste it in, and it lands here with demo videos.
           </Text>
         </View>
       ) : (
@@ -149,6 +152,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   newButtonText: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+  aiButton: {
+    borderWidth: 1, borderColor: '#4cd964', borderRadius: 12,
+    padding: 16, alignItems: 'center', marginBottom: 16,
+  },
+  aiButtonText: { color: '#4cd964', fontSize: 16, fontWeight: 'bold' },
   pickButton: {
     borderWidth: 1, borderColor: '#e10600', borderRadius: 12,
     padding: 16, alignItems: 'center', marginBottom: 16,
