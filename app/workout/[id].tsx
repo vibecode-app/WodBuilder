@@ -300,15 +300,11 @@ export default function WorkoutPlayer() {
         (l.reps != null ? ` · ${l.reps} reps` : '') +
         (l.weightLb != null ? ` · ${l.weightLb} lb` : '')
     );
-    const msg =
-      `🏋️ Workout complete — "${wname}" on WodBuilder\n` +
-      `${logsRef.current.length} sets · ${formatClock(totalSec)}\n\n` +
-      detail.join('\n') +
-      `\n\nTry WodBuilder free: https://vibecode-app.github.io/WodBuilder/`;
     // Share the result as an image card: Facebook turns text+link shares
     // into bare link cards and drops the stats, so the numbers travel in
-    // the picture. Falls back to plain text (no URL, so Facebook can't
-    // link-card it) on platforms without file share.
+    // the picture (the card itself carries the app link). The caption is
+    // kept URL-free so Facebook has nothing to choke on. Falls back to
+    // plain text (also URL-free) if the image can't be shared.
     const textOnly =
       `🏋️ Workout complete — "${wname}" on WodBuilder\n` +
       `${logsRef.current.length} sets · ${formatClock(totalSec)}\n\n` +
@@ -316,18 +312,18 @@ export default function WorkoutPlayer() {
     try {
       const file = await renderShareCard(wname, logsRef.current, totalSec);
       const nav: any = (globalThis as any).navigator;
-      const canFileShare =
-        file &&
-        nav &&
-        typeof nav.share === 'function' &&
-        (typeof nav.canShare !== 'function' || nav.canShare({ files: [file] }));
-      if (canFileShare) {
-        await nav.share({ files: [file], title: 'WodBuilder workout', text: msg });
-        return;
+      if (file && nav && typeof nav.share === 'function') {
+        try {
+          await nav.share({ files: [file], title: 'WodBuilder workout', text: textOnly });
+          return;
+        } catch (e: any) {
+          // User dismissing the sheet is not a failure — don't fall through.
+          if (e && (e.name === 'AbortError' || e.code === 20)) return;
+          // Otherwise fall through to the text share below.
+        }
       }
-    } catch (e: any) {
-      // User dismissing the sheet is not a failure — don't fall through.
-      if (e && (e.name === 'AbortError' || e.code === 20)) return;
+    } catch {
+      /* fall through to text share */
     }
     try {
       await Share.share({ message: textOnly });
