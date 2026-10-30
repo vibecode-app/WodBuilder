@@ -307,7 +307,12 @@ export default function WorkoutPlayer() {
       `\n\nTry WodBuilder free: https://vibecode-app.github.io/WodBuilder/`;
     // Share the result as an image card: Facebook turns text+link shares
     // into bare link cards and drops the stats, so the numbers travel in
-    // the picture. Falls back to plain text on platforms without file share.
+    // the picture. Falls back to plain text (no URL, so Facebook can't
+    // link-card it) on platforms without file share.
+    const textOnly =
+      `🏋️ Workout complete — "${wname}" on WodBuilder\n` +
+      `${logsRef.current.length} sets · ${formatClock(totalSec)}\n\n` +
+      detail.join('\n');
     try {
       const file = await renderShareCard(wname, logsRef.current, totalSec);
       const nav: any = (globalThis as any).navigator;
@@ -325,7 +330,7 @@ export default function WorkoutPlayer() {
       if (e && (e.name === 'AbortError' || e.code === 20)) return;
     }
     try {
-      await Share.share({ message: msg });
+      await Share.share({ message: textOnly });
     } catch {
       /* user dismissed */
     }
